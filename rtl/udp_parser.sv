@@ -1,4 +1,4 @@
-module eth_parser
+module udp_parser
     import itch_pkg::*;
 (
     input  logic        clk,
@@ -13,14 +13,12 @@ module eth_parser
     output logic        m_axis_tvalid,
     input  logic        m_axis_tready,
     output logic        m_axis_tlast,
-
-    //Testing Signals
     output logic        frame_dropped,     
-    output logic        frame_accepted     
+    output logic        frame_accepted 
 );
 
     typedef enum logic [1:0] {
-        s_receive,       // Receiving the 14-byte Ethernet header
+        s_receive,       // Receiving the bytes
         s_payload,      // Passing through the IP payload
         s_drop          // Dropping the rest of a bad frame
     } state_t;
@@ -28,22 +26,22 @@ module eth_parser
     state_t state, state_next;
 
     // Byte Counter
-    logic [3:0] byte_cnt;       // Counts 0 to 13 during header reception
-    logic [3:0] byte_cnt_next;
-    logic [15:0] ethertype;
-    logic [15:0] ethertype_next;
+    logic [2:0] byte_cnt;       
+    logic [2:0] byte_cnt_next;
+    logic [15:0] udptype;
+    logic [15:0] udptype_next;
     logic accept;
     assign accept = s_axis_tvalid & s_axis_tready;
 
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             state     <= s_receive;
-            byte_cnt  <= 4'd0;
-            ethertype <= 16'd0;
+            byte_cnt  <= 3'd0;
+            udptype <= 16'd0;
         end else begin
             state     <= state_next;
             byte_cnt  <= byte_cnt_next;
-            ethertype <= ethertype_next;
+            udptype <= udptype_next;
         end
     end
 
@@ -52,7 +50,7 @@ module eth_parser
     always_comb begin
         state_next     = state;
         byte_cnt_next  = byte_cnt;
-        ethertype_next = ethertype;
+        udptype_next = udptype;
 
         m_axis_tdata   = 8'd0;
         m_axis_tvalid  = 1'b0;
@@ -67,26 +65,26 @@ module eth_parser
                 s_axis_tready = 1'b1;
 
                 if (accept) begin
-                    if (byte_cnt == 4'd12)
-                        ethertype_next[15:8] = s_axis_tdata;
-                    else if (byte_cnt == 4'd13)
-                        ethertype_next[7:0] = s_axis_tdata;
+                    if (byte_cnt == 3'd2)
+                        udptype_next[15:8] = s_axis_tdata;
+                    else if (byte_cnt == 3'd3)
+                        udptype_next[7:0] = s_axis_tdata;
 
                     if (s_axis_tlast) begin
-                        byte_cnt_next = 4'd0;
+                        byte_cnt_next = 3'd0;
                         state_next    = s_receive;
                         frame_dropped = 1'b1;
-                    end else if (byte_cnt == 4'd13) begin
-                        if ({ethertype[15:8], s_axis_tdata} == ETHERTYPE_IPV4) begin
+                    end else if (byte_cnt == 3'd7) begin
+                        if (udptype == 16'd26400) begin
                             state_next     = s_payload;
                             frame_accepted = 1'b1;
                         end else begin
                             state_next    = s_drop;
                             frame_dropped = 1'b1;
                         end
-                        byte_cnt_next = 4'd0;
+                        byte_cnt_next = 3'd0;
                     end else begin
-                        byte_cnt_next = byte_cnt + 4'd1;
+                        byte_cnt_next = byte_cnt + 3'd1;
                     end
                 end
             end
@@ -118,3 +116,4 @@ module eth_parser
     end
 
 endmodule
+
