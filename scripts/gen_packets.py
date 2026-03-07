@@ -14,10 +14,7 @@ import random
 import json
 import os
 
-# =============================================================================
 # Constants
-# =============================================================================
-
 # Ethernet
 DST_MAC = bytes([0x01, 0x02, 0x03, 0x04, 0x05, 0x06])
 SRC_MAC = bytes([0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF])
@@ -41,9 +38,7 @@ ITCH_ORDER_CANCEL    = ord('X')  # 0x58
 ITCH_ORDER_EXECUTED  = ord('E')  # 0x45
 ITCH_ORDER_REPLACE   = ord('U')  # 0x55
 
-# =============================================================================
 # Helper Functions
-# =============================================================================
 
 def ip_checksum(header_bytes):
     """Compute IP header checksum (RFC 1071)."""
@@ -100,9 +95,8 @@ def build_udp_header(payload_length):
     )
 
 
-# =============================================================================
+
 # ITCH Message Builders
-# =============================================================================
 
 def build_add_order(order_ref, side, shares, stock, price, timestamp=None):
     """
@@ -193,9 +187,8 @@ def build_order_replace(original_ref, new_ref, new_shares, new_price, timestamp=
     )
 
 
-# =============================================================================
 # Full Packet Builder
-# =============================================================================
+
 
 def build_full_packet(itch_message):
     """Wrap an ITCH message in UDP + IP + Ethernet headers."""
@@ -216,9 +209,8 @@ def build_bad_ethertype_packet():
     return eth_header + ip_header + udp_header + itch_msg
 
 
-# =============================================================================
+
 # Output Generators
-# =============================================================================
 
 def packets_to_hex_file(packets, filepath):
     """
@@ -319,9 +311,8 @@ def generate_reference_model(messages, filepath):
     return results
 
 
-# =============================================================================
+
 # Test Scenario Generator
-# =============================================================================
 
 def generate_test_scenario(num_orders=100, seed=42):
     """
@@ -435,9 +426,7 @@ def generate_test_scenario(num_orders=100, seed=42):
     return packets, messages
 
 
-# =============================================================================
 # Main
-# =============================================================================
 
 if __name__ == '__main__':
     output_dir = os.path.join(os.path.dirname(__file__), '..', 'sim', 'test_data')
